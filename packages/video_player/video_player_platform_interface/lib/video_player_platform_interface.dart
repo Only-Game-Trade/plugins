@@ -103,6 +103,17 @@ abstract class VideoPlayerPlatform extends PlatformInterface {
   Future<void> setMixWithOthers(bool mixWithOthers) {
     throw UnimplementedError('setMixWithOthers() has not been implemented.');
   }
+
+  /// Update camera rotation
+  Future<void> setCameraRotation(int textureId, double? roll, double? pitch, double? yaw) {
+    throw UnimplementedError('setCameraRotation() has not been implemented.');
+  }
+
+  /// Set video media format
+  Future<void> setMediaFormat(int mediaFormat) {
+    throw UnimplementedError('setMediaFormat() has not been implemented.');
+  }
+
 }
 
 /// Description of the data source used to create an instance of
@@ -318,10 +329,10 @@ class DurationRange {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is DurationRange &&
-          runtimeType == other.runtimeType &&
-          start == other.start &&
-          end == other.end;
+          other is DurationRange &&
+              runtimeType == other.runtimeType &&
+              start == other.start &&
+              end == other.end;
 
   @override
   int get hashCode => start.hashCode ^ end.hashCode;
@@ -336,6 +347,8 @@ class VideoPlayerOptions {
   /// currently no way to implement this feature in this platform).
   final bool mixWithOthers;
 
+  final int mediaFormat;
+
   /// set additional optional player settings
-  VideoPlayerOptions({this.mixWithOthers = false});
+  VideoPlayerOptions({this.mixWithOthers = false, this.mediaFormat = 0});
 }

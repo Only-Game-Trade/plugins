@@ -210,6 +210,18 @@ public class VideoPlayerPlugin implements FlutterPlugin, VideoPlayerApi {
     options.mixWithOthers = arg.getMixWithOthers();
   }
 
+  @Override
+  public void setCameraRotation(Messages.CameraRotationMessage arg) {
+    VideoPlayer player = videoPlayers.get(arg.getTextureId());
+    player.setCameraRotation(arg.getRoll(),arg.getPitch(),arg.getYaw());
+  }
+
+  @Override
+  public void setMediaFormat(Messages.MediaFormatMessage arg) {
+    options.mediaFormat = arg.getMediaFormat().intValue();
+  }
+
+
   private interface KeyForAssetFn {
     String get(String asset);
   }

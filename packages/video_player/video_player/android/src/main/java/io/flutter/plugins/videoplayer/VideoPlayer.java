@@ -8,6 +8,7 @@ import static com.google.android.exoplayer2.Player.REPEAT_MODE_ALL;
 import static com.google.android.exoplayer2.Player.REPEAT_MODE_OFF;
 
 import android.content.Context;
+import android.graphics.SurfaceTexture;
 import android.net.Uri;
 import android.view.Surface;
 import com.google.android.exoplayer2.C;
@@ -31,6 +32,7 @@ import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSource;
 import com.google.android.exoplayer2.util.Util;
 import io.flutter.plugin.common.EventChannel;
+import io.flutter.plugins.videoplayer.ext360.MyGLSurface;
 import io.flutter.view.TextureRegistry;
 import java.util.Arrays;
 import java.util.Collections;
@@ -47,6 +49,8 @@ final class VideoPlayer {
   private SimpleExoPlayer exoPlayer;
 
   private Surface surface;
+
+  private MyGLSurface glSurface;
 
   private final TextureRegistry.SurfaceTextureEntry textureEntry;
 
@@ -167,7 +171,15 @@ final class VideoPlayer {
           }
         });
 
-    surface = new Surface(textureEntry.surfaceTexture());
+    if(options.mediaFormat>>3==1) {
+        SurfaceTexture outputTexture = textureEntry.surfaceTexture();
+        glSurface = new MyGLSurface(outputTexture);
+        int sphericalType = (options.mediaFormat & 0x2)>>1;
+        int mediaType = (options.mediaFormat & 0x1)+(options.mediaFormat & 0x4);
+        surface = glSurface.createSphericalSurface(mediaType,sphericalType);
+    }else {
+        surface = new Surface(textureEntry.surfaceTexture());
+    }
     exoPlayer.setVideoSurface(surface);
     setAudioAttributes(exoPlayer, options.mixWithOthers);
 
@@ -282,6 +294,11 @@ final class VideoPlayer {
         }
         event.put("width", width);
         event.put("height", height);
+
+        // Update viewport
+        if(glSurface!=null) {
+          glSurface.surfaceChanged(null, 0, Math.min(width, height), Math.min(width, height));
+        }
       }
       eventSink.success(event);
     }
@@ -296,8 +313,19 @@ final class VideoPlayer {
     if (surface != null) {
       surface.release();
     }
+    if (glSurface != null) {
+      glSurface.destroy();
+    }
     if (exoPlayer != null) {
       exoPlayer.release();
+    }
+  }
+
+  void setCameraRotation(Double roll,Double pitch,Double yaw) {
+    if(glSurface!=null) {
+      if (roll != null) glSurface.setRollOffset(roll.floatValue());
+      if (pitch != null) glSurface.setPitchOffset(pitch.floatValue());
+      if (yaw != null) glSurface.setYawOffset(yaw.floatValue());
     }
   }
 }

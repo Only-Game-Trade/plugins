@@ -93,24 +93,20 @@ class MethodChannelVideoPlayer extends VideoPlayerPlatform {
 
   @override
   Future<Duration> getPosition(int textureId) async {
-    PositionMessage response =
-        await _api.position(TextureMessage()..textureId = textureId);
+    PositionMessage response = await _api.position(TextureMessage()..textureId = textureId);
     return Duration(milliseconds: response.position!);
   }
 
   @override
   Stream<VideoEvent> videoEventsFor(int textureId) {
-    return _eventChannelFor(textureId)
-        .receiveBroadcastStream()
-        .map((dynamic event) {
+    return _eventChannelFor(textureId).receiveBroadcastStream().map((dynamic event) {
       final Map<dynamic, dynamic> map = event;
       switch (map['event']) {
         case 'initialized':
           return VideoEvent(
             eventType: VideoEventType.initialized,
             duration: Duration(milliseconds: map['duration']),
-            size: Size(map['width']?.toDouble() ?? 0.0,
-                map['height']?.toDouble() ?? 0.0),
+            size: Size(map['width']?.toDouble() ?? 0.0, map['height']?.toDouble() ?? 0.0),
           );
         case 'completed':
           return VideoEvent(
@@ -145,12 +141,29 @@ class MethodChannelVideoPlayer extends VideoPlayerPlatform {
     );
   }
 
+  @override
+  Future<void> setCameraRotation(int textureId, double? roll, double? pitch, double? yaw) {
+    return _api.setCameraRotation(
+      CameraRotationMessage()
+        ..textureId = textureId
+        ..roll = roll
+        ..pitch = pitch
+        ..yaw = yaw,
+    );
+  }
+
+  @override
+  Future<void> setMediaFormat(int mediaFormat) {
+    return _api.setMediaFormat(
+      MediaFormatMessage()..mediaFormat = mediaFormat,
+    );
+  }
+
   EventChannel _eventChannelFor(int textureId) {
     return EventChannel('flutter.io/videoPlayer/videoEvents$textureId');
   }
 
-  static const Map<VideoFormat, String> _videoFormatStringMap =
-      <VideoFormat, String>{
+  static const Map<VideoFormat, String> _videoFormatStringMap = <VideoFormat, String>{
     VideoFormat.ss: 'ss',
     VideoFormat.hls: 'hls',
     VideoFormat.dash: 'dash',

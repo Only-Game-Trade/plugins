@@ -42,6 +42,17 @@ class MixWithOthersMessage {
   bool mixWithOthers;
 }
 
+class CameraRotationMessage {
+  int textureId;
+  double roll;
+  double pitch;
+  double yaw;
+}
+
+class MediaFormatMessage {
+  int mediaFormat;
+}
+
 @HostApi(dartHostTestHandler: 'TestHostVideoPlayerApi')
 abstract class VideoPlayerApi {
   void initialize();
@@ -55,6 +66,8 @@ abstract class VideoPlayerApi {
   void seekTo(PositionMessage msg);
   void pause(TextureMessage msg);
   void setMixWithOthers(MixWithOthersMessage msg);
+  void setCameraRotation(CameraRotationMessage msg);
+  void setMediaFormat(MediaFormatMessage msg);
 }
 
 void configurePigeon(PigeonOptions opts) {
