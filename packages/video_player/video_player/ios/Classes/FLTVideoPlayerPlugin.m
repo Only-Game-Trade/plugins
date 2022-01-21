@@ -6,6 +6,7 @@
 #import <AVFoundation/AVFoundation.h>
 #import <GLKit/GLKit.h>
 #import "messages.h"
+#import "ext360/SurfaceRenderer.h"
 
 #if !__has_feature(objc_arc)
 #error Code Requires ARC.
@@ -41,6 +42,7 @@
 @property(nonatomic, readonly) bool isPlaying;
 @property(nonatomic) bool isLooping;
 @property(nonatomic, readonly) bool isInitialized;
+@property(nonatomic) SurfaceRenderer* render;
 - (instancetype)initWithURL:(NSURL*)url
                frameUpdater:(FLTFrameUpdater*)frameUpdater
                 httpHeaders:(NSDictionary<NSString*, NSString*>*)headers;
@@ -258,7 +260,9 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
   [self addObservers:item];
 
   [asset loadValuesAsynchronouslyForKeys:@[ @"tracks" ] completionHandler:assetCompletionHandler];
-
+  
+  _render = [[SurfaceRenderer alloc] initWithVideoOutput:_videoOutput];
+  
   return self;
 }
 
@@ -417,12 +421,13 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
 }
 
 - (CVPixelBufferRef)copyPixelBuffer {
-  CMTime outputItemTime = [_videoOutput itemTimeForHostTime:CACurrentMediaTime()];
-  if ([_videoOutput hasNewPixelBufferForItemTime:outputItemTime]) {
-    return [_videoOutput copyPixelBufferForItemTime:outputItemTime itemTimeForDisplay:NULL];
-  } else {
-    return NULL;
-  }
+  return [_render copyPixelBuffer];
+//  CMTime outputItemTime = [_videoOutput itemTimeForHostTime:CACurrentMediaTime()];
+//  if ([_videoOutput hasNewPixelBufferForItemTime:outputItemTime]) {
+//    return [_videoOutput copyPixelBufferForItemTime:outputItemTime itemTimeForDisplay:NULL];
+//  } else {
+//    return NULL;
+//  }
 }
 
 - (void)onTextureUnregistered:(NSObject<FlutterTexture>*)texture {
@@ -474,6 +479,7 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
 - (void)dispose {
   [self disposeSansEventChannel];
   [_eventChannel setStreamHandler:nil];
+  [_render dispose];
 }
 
 @end
@@ -483,6 +489,7 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
 @property(readonly, weak, nonatomic) NSObject<FlutterBinaryMessenger>* messenger;
 @property(readonly, strong, nonatomic) NSMutableDictionary* players;
 @property(readonly, strong, nonatomic) NSObject<FlutterPluginRegistrar>* registrar;
+@property(nonatomic) int mediaFormat;
 @end
 
 @implementation FLTVideoPlayerPlugin
@@ -527,6 +534,10 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
   _players[@(textureId)] = player;
   FLTTextureMessage* result = [[FLTTextureMessage alloc] init];
   result.textureId = @(textureId);
+  
+  // setup renderer parameter
+  [player.render setMediaFormat:_mediaFormat];
+  [player.render start];
   return result;
 }
 
@@ -633,6 +644,17 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
   } else {
     [[AVAudioSession sharedInstance] setCategory:AVAudioSessionCategoryPlayback error:nil];
   }
+}
+
+- (void)setCameraRotation:(FLTCameraRotationMessage *)input error:(FlutterError * _Nullable __autoreleasing *)error{
+  FLTVideoPlayer* player = _players[input.textureId];
+  [player.render setCameraRotationWithRoll:input.roll.floatValue
+                                     pitch:input.pitch.floatValue
+                                       yaw: input.yaw.floatValue];
+}
+
+- (void)setMediaFormat:(FLTMediaFormatMessage *)input error:(FlutterError * _Nullable __autoreleasing *)error {
+  _mediaFormat = input.mediaFormat.intValue;
 }
 
 @end
