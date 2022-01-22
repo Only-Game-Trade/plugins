@@ -121,6 +121,11 @@ class VideoPlayerValue {
     if (aspectRatio <= 0) {
       return 1.0;
     }
+
+    if(mediaFormat!=null && mediaFormat>0) {
+      return 1.0;
+    }
+
     return aspectRatio;
   }
 

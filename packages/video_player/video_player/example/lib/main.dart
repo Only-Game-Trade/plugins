@@ -46,8 +46,8 @@ class _App extends StatelessWidget {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            _BumbleBeeRemoteVideo(url: 'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4', mediaFormat: MediaFormat.STANDARD),
-            _BumbleBeeRemoteVideo(url: 'https://content.tockto.me/JP-JP-01/JP-JP-0101/JP-JP-010101/paid.m3u8',mediaFormat: MediaFormat.VR3D180_SBS),
+            //_BumbleBeeRemoteVideo(url: 'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4', mediaFormat: MediaFormat.STANDARD),
+            _BumbleBeeRemoteVideo(url: 'https://videojs-vr.netlify.app/samples/eagle-360.mp4',mediaFormat: MediaFormat.VR2D360),
           ],
         ),
       ),
@@ -87,9 +87,6 @@ class _BumbleBeeRemoteVideoState extends State<_BumbleBeeRemoteVideo> {
     super.initState();
     _controller = VideoPlayerController.network(
       widget.url,
-      //'https://content.tockto.me/JP-JP-01/JP-JP-0101/JP-JP-010101/paid.m3u8',
-      //'https://bitmovin-a.akamaihd.net/content/playhouse-vr/progressive.mp4',
-      //'https://content.tockto.me/sample180_720.mp4',
       //closedCaptionFile: _loadCaptions(),
       videoPlayerOptions: VideoPlayerOptions(
         mixWithOthers: true,
@@ -122,7 +119,7 @@ class _BumbleBeeRemoteVideoState extends State<_BumbleBeeRemoteVideo> {
           Container(
             padding: const EdgeInsets.all(20),
             child: AspectRatio(
-              aspectRatio: _controller.value.mediaFormat == 0 ? _controller.value.aspectRatio : 1.0,
+              aspectRatio: _controller.value.aspectRatio,
               child: Stack(
                 alignment: Alignment.bottomCenter,
                 children: <Widget>[
