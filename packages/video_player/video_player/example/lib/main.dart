@@ -28,26 +28,11 @@ class _App extends StatelessWidget {
       key: const ValueKey<String>('home_page'),
       appBar: AppBar(
         title: const Text('Video player example'),
-        actions: <Widget>[
-          IconButton(
-            key: const ValueKey<String>('push_tab'),
-            icon: const Icon(Icons.navigation),
-            onPressed: () {
-              Navigator.push<_PlayerVideoAndPopPage>(
-                context,
-                MaterialPageRoute<_PlayerVideoAndPopPage>(
-                  builder: (BuildContext context) => _PlayerVideoAndPopPage(),
-                ),
-              );
-            },
-          )
-        ],
       ),
       body: SingleChildScrollView(
         child: Column(
           children: [
-            //_BumbleBeeRemoteVideo(url: 'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4', mediaFormat: MediaFormat.STANDARD),
-            _BumbleBeeRemoteVideo(url: 'https://videojs-vr.netlify.app/samples/eagle-360.mp4',mediaFormat: MediaFormat.VR2D360),
+            _BumbleBeeRemoteVideo(url: 'https://videojs-vr.netlify.app/samples/eagle-360.mp4', mediaFormat: MediaFormat.VR2D360),
           ],
         ),
       ),
@@ -72,22 +57,15 @@ class _BumbleBeeRemoteVideo extends StatefulWidget {
 double _cameraPitch = 0;
 double _cameraYaw = 0;
 
-
 class _BumbleBeeRemoteVideoState extends State<_BumbleBeeRemoteVideo> {
   late VideoPlayerController _controller;
 
-
-  Future<ClosedCaptionFile> _loadCaptions() async {
-    final String fileContents = await DefaultAssetBundle.of(context).loadString('assets/bumble_bee_captions.vtt');
-    return WebVTTCaptionFile(fileContents); // For vtt files, use WebVTTCaptionFile
-  }
 
   @override
   void initState() {
     super.initState();
     _controller = VideoPlayerController.network(
       widget.url,
-      //closedCaptionFile: _loadCaptions(),
       videoPlayerOptions: VideoPlayerOptions(
         mixWithOthers: true,
         mediaFormat: widget.mediaFormat,
@@ -100,8 +78,6 @@ class _BumbleBeeRemoteVideoState extends State<_BumbleBeeRemoteVideo> {
     _controller.setLooping(true);
     _controller.initialize();
   }
-
-
 
   @override
   void dispose() {
@@ -124,7 +100,6 @@ class _BumbleBeeRemoteVideoState extends State<_BumbleBeeRemoteVideo> {
                 alignment: Alignment.bottomCenter,
                 children: <Widget>[
                   VideoPlayer(_controller),
-                  //ClosedCaption(text: _controller.value.caption.text),
                   _ControlsOverlay(controller: _controller),
                   VideoProgressIndicator(_controller, allowScrubbing: true),
                 ],
@@ -136,8 +111,6 @@ class _BumbleBeeRemoteVideoState extends State<_BumbleBeeRemoteVideo> {
     );
   }
 }
-
-
 
 class _ControlsOverlay extends StatelessWidget {
   const _ControlsOverlay({Key? key, required this.controller}) : super(key: key);
@@ -261,66 +234,6 @@ class _ControlsOverlay extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-
-class _PlayerVideoAndPopPage extends StatefulWidget {
-  @override
-  _PlayerVideoAndPopPageState createState() => _PlayerVideoAndPopPageState();
-}
-
-class _PlayerVideoAndPopPageState extends State<_PlayerVideoAndPopPage> {
-  late VideoPlayerController _videoPlayerController;
-  bool startedPlaying = false;
-
-  @override
-  void initState() {
-    super.initState();
-
-    _videoPlayerController = VideoPlayerController.asset('assets/Butterfly-209.mp4');
-    _videoPlayerController.addListener(() {
-      if (startedPlaying && !_videoPlayerController.value.isPlaying) {
-        if(Navigator.canPop(context)) {
-          Navigator.pop(context);
-        }
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _videoPlayerController.dispose();
-    super.dispose();
-  }
-
-  Future<bool> started() async {
-    await _videoPlayerController.initialize();
-    await _videoPlayerController.play();
-    startedPlaying = true;
-    return true;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      elevation: 0,
-      child: Center(
-        child: FutureBuilder<bool>(
-          future: started(),
-          builder: (BuildContext context, AsyncSnapshot<bool> snapshot) {
-            if (snapshot.data == true) {
-              return AspectRatio(
-                aspectRatio: _videoPlayerController.value.aspectRatio,
-                child: VideoPlayer(_videoPlayerController),
-              );
-            } else {
-              return const Text('waiting for video to load');
-            }
-          },
-        ),
-      ),
     );
   }
 }
