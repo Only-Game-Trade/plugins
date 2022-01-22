@@ -6,9 +6,9 @@ import 'dart:ui';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:video_player_platform_interface/messages.dart';
-import 'package:video_player_platform_interface/method_channel_video_player.dart';
-import 'package:video_player_platform_interface/video_player_platform_interface.dart';
+import 'package:video_player_platform_interface_extra/messages.dart';
+import 'package:video_player_platform_interface_extra/method_channel_video_player.dart';
+import 'package:video_player_platform_interface_extra/video_player_platform_interface.dart';
 
 import 'test.dart';
 

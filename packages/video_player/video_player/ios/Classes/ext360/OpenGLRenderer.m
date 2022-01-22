@@ -112,20 +112,13 @@
   [self deinitGL];
 }
 
-#pragma mark - Public
 
-- (void)dispose {
-  _running = NO;
-}
-
-#pragma mark - FlutterTexture
 
 - (CVPixelBufferRef)copyPixelBuffer {
   CVBufferRetain(_output);
   return _output;
 }
 
-#pragma mark - Private
 
 - (void)initGL {
   
@@ -180,6 +173,7 @@
   // Clean texture
   if(_texture) {
     CFRelease(_texture);
+    _texture = NULL;
   }
   if(_textureCache) {
     CVOpenGLESTextureCacheFlush(_textureCache, 0);
@@ -227,5 +221,11 @@
   CFRelease(_textureCache);
   NSLog(@"OpenGL deinit OK.");
 }
+
+
+- (void)dispose {
+  _running = NO;
+}
+
 
 @end

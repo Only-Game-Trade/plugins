@@ -115,6 +115,7 @@
   
   if(_texture) {
     CFRelease(_texture);
+    _texture = NULL;
   }
   if(_textureCache) {
     CVOpenGLESTextureCacheFlush(_textureCache, 0);

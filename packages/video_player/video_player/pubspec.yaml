@@ -1,8 +1,7 @@
-name: video_player
-description: Flutter plugin for displaying inline video with other Flutter
-  widgets on Android, iOS, and web.
-repository: https://github.com/flutter/plugins/tree/master/packages/video_player/video_player
-issue_tracker: https://github.com/flutter/flutter/issues?q=is%3Aissue+is%3Aopen+label%3A%22p%3A+video_player%22
+name: video_player_extra
+description: A fork of flutter's video_player with extra ability to play 180 or 360 videos.
+repository: https://github.com/Eittipat/plugins/tree/master/packages/video_player/video_player
+issue_tracker: https://github.com/Eittipat/flutter/issues?q=is%3Aissue+is%3Aopen+label%3A%22p%3A+video_player%22
 version: 2.2.11
 
 environment:
@@ -17,15 +16,13 @@ flutter:
         pluginClass: VideoPlayerPlugin
       ios:
         pluginClass: FLTVideoPlayerPlugin
-      web:
-        default_package: video_player_web
+#      web:
+#        default_package: video_player_web
 
 dependencies:
   flutter:
     sdk: flutter
-  #video_player_platform_interface: ">=4.2.0 <6.0.0"
-  video_player_platform_interface:
-    path: ../video_player_platform_interface/
+  video_player_platform_interface_extra: ">=4.2.0 <6.0.0"
   # video_player_web: ^2.0.0
   html: ^0.15.0
 
