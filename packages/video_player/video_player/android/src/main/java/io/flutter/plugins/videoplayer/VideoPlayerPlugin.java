@@ -218,7 +218,9 @@ public class VideoPlayerPlugin implements FlutterPlugin, VideoPlayerApi {
 
   @Override
   public void setMediaFormat(Messages.MediaFormatMessage arg) {
-    options.mediaFormat = arg.getMediaFormat().intValue();
+    VideoPlayer player = videoPlayers.get(arg.getTextureId());
+    // options.mediaFormat = arg.getMediaFormat().intValue();
+    player.setMediaFormat( arg.getMediaFormat().intValue());
   }
 
 

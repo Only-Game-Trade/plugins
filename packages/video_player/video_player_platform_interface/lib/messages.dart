@@ -169,10 +169,12 @@ class CameraRotationMessage {
 }
 
 class MediaFormatMessage {
+  int? textureId;
   int? mediaFormat;
 
   Object encode() {
     final Map<Object?, Object?> pigeonMap = <Object?, Object?>{};
+    pigeonMap['textureId'] = textureId;
     pigeonMap['mediaFormat'] = mediaFormat;
     return pigeonMap;
   }
@@ -180,6 +182,7 @@ class MediaFormatMessage {
   static MediaFormatMessage decode(Object message) {
     final Map<Object?, Object?> pigeonMap = message as Map<Object?, Object?>;
     return MediaFormatMessage()
+      ..textureId = pigeonMap['textureId'] as int?
       ..mediaFormat = pigeonMap['mediaFormat'] as int?;
   }
 }

@@ -6,5 +6,5 @@ package io.flutter.plugins.videoplayer;
 
 class VideoPlayerOptions {
   public boolean mixWithOthers;
-  public int mediaFormat;
+  // public int mediaFormat;
 }

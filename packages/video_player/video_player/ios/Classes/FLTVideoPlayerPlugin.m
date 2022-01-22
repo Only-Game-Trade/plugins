@@ -537,7 +537,6 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
   
   // setup renderer parameter
   [player.render setMediaFormat:_mediaFormat];
-  [player.render start];
   return result;
 }
 
@@ -654,7 +653,8 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
 }
 
 - (void)setMediaFormat:(FLTMediaFormatMessage *)input error:(FlutterError * _Nullable __autoreleasing *)error {
-  _mediaFormat = input.mediaFormat.intValue;
+  FLTVideoPlayer* player = _players[input.textureId];
+  [player.render setMediaFormat:input.mediaFormat.intValue];
 }
 
 @end

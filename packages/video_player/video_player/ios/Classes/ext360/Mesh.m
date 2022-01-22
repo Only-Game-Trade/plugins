@@ -2,7 +2,7 @@
 //  Mesh.m
 //  video_player
 //
-//  Created by Eittipat Kraichingrith on 20/1/2565 BE.
+//  Created by Eittipat K on 20/1/2565 BE.
 //
 
 #import "Mesh.h"
@@ -10,15 +10,21 @@
 
 @import OpenGLES;
 
-#define POSITION_COORDS_PER_VERTEX 3
-#define TEXTURE_COORDS_PER_VERTEX 4
-#define CPV 7
-#define VERTEX_STRIDE_BYTES 28
+#define SPHERE_POSITION_COORDS_PER_VERTEX 3
+#define SPHERE_TEXTURE_COORDS_PER_VERTEX 4
+#define SPHERE_CPV 7
+#define SPHERE_VERTEX_STRIDE_BYTES 28
+
+#define CANVAS_QUAD_POSITION_COORDS_PER_VERTEX 2
+#define CANVAS_QUAD_TEXTURE_COORDS_PER_VERTEX 2
+#define CANVAS_QUAD_CPV 4
+#define CANVAS_QUAD_VERTEX_STRIDE_BYTES 16
+
 #define MEDIA_MONOSCOPIC 0
 #define MEDIA_STEREO_LEFT_RIGHT 1
 #define MEDIA_STEREO_TOP_BOTTOM 2
 
-const NSString* VERTEX_SHADER_CODE =
+const NSString* SPHERE_VERTEX_SHADER_CODE =
 @"#version 300 es\n"\
 @"uniform mat4 uMvpMatrix;\n"\
 @"in vec4 aPosition;\n"\
@@ -26,7 +32,17 @@ const NSString* VERTEX_SHADER_CODE =
 @"out vec2 vTexCoords;\n"\
 @"void main() {\n"\
 @"  gl_Position = uMvpMatrix * aPosition;\n"\
-@"  vTexCoords = aTexCoords;\n"\
+@"  vTexCoords = vec2(aTexCoords.x, 1.0 - aTexCoords.y);\n"\
+@"}";
+
+const NSString* CANVAS_QUAD_VERTEX_SHADER_CODE =
+@"#version 300 es\n"\
+@"in vec4 aPosition;\n"\
+@"in vec2 aTexCoords;\n"\
+@"out vec2 vTexCoords;\n"\
+@"void main() {\n"\
+@"  gl_Position = aPosition;\n"\
+@"  vTexCoords = vec2(aTexCoords.x, 1.0 - aTexCoords.y);\n"\
 @"}";
 
 const NSString* FRAGMENT_SHADER_CODE =
@@ -41,10 +57,11 @@ const NSString* FRAGMENT_SHADER_CODE =
 
 @interface Mesh()
 
-
 @end
 
 @implementation Mesh {
+  
+@protected
   float* _vertices;
   int _length;
   GLuint _program;
@@ -72,6 +89,33 @@ const NSString* FRAGMENT_SHADER_CODE =
   return self;
 }
 
+
+-(void)glInit {
+  NSLog(@"NotImplementedError");
+}
+
+-(void)glDrawWithTexture:(CVOpenGLESTextureRef)texture mvpMatrix:(GLKMatrix4)mvpMatrix {
+  NSLog(@"NotImplementedError");
+}
+
+-(void)glDestroy {
+  if(_program) {
+    glDeleteProgram(_program);
+  }
+  glDeleteBuffers(1, &_vertexArray);
+  glDeleteBuffers(1, &_vertexBuffer);
+  free(_vertices);
+}
+
+@end
+
+@interface Sphere()
+
+@end
+
+@implementation Sphere
+
+
 +(instancetype)createUvSphereWithRadius:(float)radius
                               latitudes:(int)latitudes
                              longitudes:(int)longitudes
@@ -92,6 +136,8 @@ const NSString* FRAGMENT_SHADER_CODE =
   float horizontalFovRads = GLKMathDegreesToRadians(horizontalFovDegrees);
   float quadHeightRads = verticalFovRads / (float)latitudes;
   float quadWidthRads = horizontalFovRads / (float)longitudes;
+  
+  const int CPV = SPHERE_CPV;
   
   // Each latitude strip has 2 * (longitudes quads + extra edge) vertices + 2 degenerate vertices.
   int vertexCount = (2 * (longitudes + 1) + 2) * latitudes;
@@ -162,8 +208,10 @@ const NSString* FRAGMENT_SHADER_CODE =
   return [[self alloc]initWithVertices:vertexData :length];
 }
 
+
 -(void)glInit {
-  _program = [Utils compileProgramWithVertexCode:VERTEX_SHADER_CODE fragmentCode:FRAGMENT_SHADER_CODE];
+  _program = [Utils compileProgramWithVertexCode:SPHERE_VERTEX_SHADER_CODE
+                                    fragmentCode:FRAGMENT_SHADER_CODE];
   
   _mvpMatrixHandle = glGetUniformLocation(_program, "uMvpMatrix");
   _positionHandle = (GLuint)glGetAttribLocation(_program, "aPosition");
@@ -183,11 +231,21 @@ const NSString* FRAGMENT_SHADER_CODE =
   glEnableVertexAttribArray(_texCoordsHandle);
   
   // Load position data
-  glVertexAttribPointer(_positionHandle,POSITION_COORDS_PER_VERTEX,GL_FLOAT, GL_FALSE,VERTEX_STRIDE_BYTES, NULL);
+  glVertexAttribPointer(_positionHandle,
+                        SPHERE_POSITION_COORDS_PER_VERTEX,
+                        GL_FLOAT,
+                        GL_FALSE,
+                        SPHERE_VERTEX_STRIDE_BYTES,
+                        NULL);
   
   // Load texture data
-  int *textureOffset = (POSITION_COORDS_PER_VERTEX+2)*4;
-  glVertexAttribPointer(_texCoordsHandle,TEXTURE_COORDS_PER_VERTEX,GL_FLOAT, GL_FALSE,VERTEX_STRIDE_BYTES, textureOffset);
+  int *textureOffset = SPHERE_POSITION_COORDS_PER_VERTEX*4;
+  glVertexAttribPointer(_texCoordsHandle,
+                        SPHERE_TEXTURE_COORDS_PER_VERTEX,
+                        GL_FLOAT,
+                        GL_FALSE,
+                        SPHERE_VERTEX_STRIDE_BYTES,
+                        textureOffset);
   
   // Unbind the vertex buffer and the vertex array object.
   glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -197,6 +255,7 @@ const NSString* FRAGMENT_SHADER_CODE =
   glDisableVertexAttribArray(_texCoordsHandle);
   
 }
+
 
 -(void)glDrawWithTexture:(CVOpenGLESTextureRef)texture mvpMatrix:(GLKMatrix4)mvpMatrix {
   glUseProgram(_program);
@@ -208,18 +267,108 @@ const NSString* FRAGMENT_SHADER_CODE =
   
   // Render
   glBindVertexArray(_vertexArray);
-  glDrawArrays(GL_TRIANGLE_STRIP, 0, _length/CPV);
+  glDrawArrays(GL_TRIANGLE_STRIP, 0, _length/SPHERE_CPV);
   glBindVertexArray(0);
   
 }
 
--(void)glDestroy {
-  if(_program) {
-    glDeleteProgram(_program);
-  }
-  glDeleteBuffers(1, &_vertexArray);
-  glDeleteBuffers(1, &_vertexBuffer);
-  free(_vertices);
+@end
+
+
+@interface CanvasQuad()
+
+@end
+
+
+@implementation CanvasQuad
+
+
++(instancetype)createCanvasQuad {
+  int length = 16;
+  float *vertices = (float*)malloc(sizeof(float)*length);
+  int counter =0;
+  float width = 1.0;
+  float height = 1.0;
+  vertices[counter++] = -width;
+  vertices[counter++] = -height;
+  vertices[counter++] = 0;
+  vertices[counter++] = 1;
+  vertices[counter++] = width;
+  vertices[counter++] = -height;
+  vertices[counter++] = 1;
+  vertices[counter++] = 1;
+  vertices[counter++] = -width;
+  vertices[counter++] = height;
+  vertices[counter++] = 0;
+  vertices[counter++] = 0;
+  vertices[counter++] = width;
+  vertices[counter++] = height;
+  vertices[counter++] = 1;
+  vertices[counter++] = 0;
+  assert(counter==length);
+  return [[CanvasQuad alloc]initWithVertices:vertices :length];
+}
+
+
+-(void)glInit {
+  _program = [Utils compileProgramWithVertexCode:CANVAS_QUAD_VERTEX_SHADER_CODE
+                                    fragmentCode:FRAGMENT_SHADER_CODE];
+  
+  _positionHandle = (GLuint)glGetAttribLocation(_program, "aPosition");
+  _texCoordsHandle = (GLuint)glGetAttribLocation(_program, "aTexCoords");
+  _textureHandle = (GLuint)glGetUniformLocation(_program, "uTexture");
+  
+  // Generate and bind a vertex array object
+  glGenVertexArrays(1, &_vertexArray);
+  glBindVertexArray(_vertexArray);
+  
+  // Generate and bind a vertex buffer object
+  glGenBuffers(1, &_vertexBuffer);
+  glBindBuffer(GL_ARRAY_BUFFER, _vertexBuffer);
+  glBufferData(GL_ARRAY_BUFFER, _length*sizeof(float),_vertices, GL_STATIC_DRAW);
+  
+  glEnableVertexAttribArray(_positionHandle);
+  glEnableVertexAttribArray(_texCoordsHandle);
+  
+  // Load position data
+  glVertexAttribPointer(_positionHandle,
+                        CANVAS_QUAD_POSITION_COORDS_PER_VERTEX,
+                        GL_FLOAT,
+                        GL_FALSE,
+                        CANVAS_QUAD_VERTEX_STRIDE_BYTES,
+                        NULL);
+  
+  // Load texture data
+  int *textureOffset = CANVAS_QUAD_POSITION_COORDS_PER_VERTEX*4;
+  glVertexAttribPointer(_texCoordsHandle,
+                        CANVAS_QUAD_TEXTURE_COORDS_PER_VERTEX,
+                        GL_FLOAT,
+                        GL_FALSE,
+                        CANVAS_QUAD_VERTEX_STRIDE_BYTES,
+                        textureOffset);
+  
+  // Unbind the vertex buffer and the vertex array object.
+  glBindBuffer(GL_ARRAY_BUFFER, 0);
+  glBindVertexArray(0);
+  
+  glDisableVertexAttribArray(_positionHandle);
+  glDisableVertexAttribArray(_texCoordsHandle);
+  
+}
+
+
+-(void)glDrawWithTexture:(CVOpenGLESTextureRef)texture mvpMatrix:(GLKMatrix4)mvpMatrix {
+  glUseProgram(_program);
+  glUniform1i(_textureHandle, 0);
+  
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(CVOpenGLESTextureGetTarget(texture), CVOpenGLESTextureGetName(texture));
+  
+  // Render
+  glBindVertexArray(_vertexArray);
+  glDrawArrays(GL_TRIANGLE_STRIP, 0, _length/CANVAS_QUAD_CPV);
+  glBindVertexArray(0);
+  
 }
 
 @end

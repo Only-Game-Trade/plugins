@@ -43,18 +43,39 @@ class _App extends StatelessWidget {
           )
         ],
       ),
-      body: _BumbleBeeRemoteVideo(),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            _BumbleBeeRemoteVideo(url: 'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4', mediaFormat: MediaFormat.STANDARD),
+            _BumbleBeeRemoteVideo(url: 'https://content.tockto.me/JP-JP-01/JP-JP-0101/JP-JP-010101/paid.m3u8',mediaFormat: MediaFormat.VR3D180_SBS),
+          ],
+        ),
+      ),
     );
   }
 }
 
 class _BumbleBeeRemoteVideo extends StatefulWidget {
+  final String url;
+  final int mediaFormat;
+
+  _BumbleBeeRemoteVideo({
+    Key? key,
+    required this.url,
+    required this.mediaFormat,
+  }) : super(key: key);
+
   @override
   _BumbleBeeRemoteVideoState createState() => _BumbleBeeRemoteVideoState();
 }
 
+double _cameraPitch = 0;
+double _cameraYaw = 0;
+
+
 class _BumbleBeeRemoteVideoState extends State<_BumbleBeeRemoteVideo> {
   late VideoPlayerController _controller;
+
 
   Future<ClosedCaptionFile> _loadCaptions() async {
     final String fileContents = await DefaultAssetBundle.of(context).loadString('assets/bumble_bee_captions.vtt');
@@ -65,14 +86,14 @@ class _BumbleBeeRemoteVideoState extends State<_BumbleBeeRemoteVideo> {
   void initState() {
     super.initState();
     _controller = VideoPlayerController.network(
-      //'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4',
+      widget.url,
       //'https://content.tockto.me/JP-JP-01/JP-JP-0101/JP-JP-010101/paid.m3u8',
       //'https://bitmovin-a.akamaihd.net/content/playhouse-vr/progressive.mp4',
-      'https://content.tockto.me/sample180_720.mp4',
+      //'https://content.tockto.me/sample180_720.mp4',
       //closedCaptionFile: _loadCaptions(),
       videoPlayerOptions: VideoPlayerOptions(
         mixWithOthers: true,
-        mediaFormat: MediaFormat.VR3D180_SBS,
+        mediaFormat: widget.mediaFormat,
       ),
     );
 
@@ -82,6 +103,8 @@ class _BumbleBeeRemoteVideoState extends State<_BumbleBeeRemoteVideo> {
     _controller.setLooping(true);
     _controller.initialize();
   }
+
+
 
   @override
   void dispose() {
@@ -99,14 +122,14 @@ class _BumbleBeeRemoteVideoState extends State<_BumbleBeeRemoteVideo> {
           Container(
             padding: const EdgeInsets.all(20),
             child: AspectRatio(
-              aspectRatio: 1.0,
+              aspectRatio: _controller.value.mediaFormat == 0 ? _controller.value.aspectRatio : 1.0,
               child: Stack(
                 alignment: Alignment.bottomCenter,
                 children: <Widget>[
                   VideoPlayer(_controller),
                   //ClosedCaption(text: _controller.value.caption.text),
                   _ControlsOverlay(controller: _controller),
-                  //VideoProgressIndicator(_controller, allowScrubbing: true),
+                  VideoProgressIndicator(_controller, allowScrubbing: true),
                 ],
               ),
             ),
@@ -117,9 +140,7 @@ class _BumbleBeeRemoteVideoState extends State<_BumbleBeeRemoteVideo> {
   }
 }
 
-double _cameraRoll = 0;
-double _cameraPitch = 0;
-double _cameraYaw = 0;
+
 
 class _ControlsOverlay extends StatelessWidget {
   const _ControlsOverlay({Key? key, required this.controller}) : super(key: key);
@@ -134,6 +155,16 @@ class _ControlsOverlay extends StatelessWidget {
     5.0,
     10.0,
   ];
+
+  static const _mediaFormats = {
+    MediaFormat.STANDARD: "Standard",
+    MediaFormat.VR2D180: "Monoscopic 180",
+    MediaFormat.VR2D360: "Monoscopic 360",
+    MediaFormat.VR3D180_OU: "Stereoscopic 180 OverUnder",
+    MediaFormat.VR3D180_SBS: "Stereoscopic 180 SideBySide",
+    MediaFormat.VR3D360_OU: "Stereoscopic 360 OverUnder",
+    MediaFormat.VR3D360_SBS: "Stereoscopic 360 SideBySide",
+  };
 
   final VideoPlayerController controller;
 
@@ -171,7 +202,7 @@ class _ControlsOverlay extends StatelessWidget {
             _cameraYaw -= cr * touchX - sr * touchY;
             _cameraPitch += sr * touchX + cr * touchY;
             _cameraPitch = max(-45, min(45, _cameraPitch));
-            controller.setCameraRotation(null, _cameraPitch, _cameraYaw);
+            controller.setCameraRotation(0.0, _cameraPitch, _cameraYaw);
           },
         ),
         Align(
@@ -203,10 +234,40 @@ class _ControlsOverlay extends StatelessWidget {
             ),
           ),
         ),
+        Align(
+          alignment: Alignment.topLeft,
+          child: PopupMenuButton<int>(
+            initialValue: controller.value.mediaFormat,
+            tooltip: 'Switch between media format',
+            onSelected: (format) {
+              controller.setMediaFormat(format);
+            },
+            itemBuilder: (context) {
+              return [
+                for (var keyvalue in _mediaFormats.entries)
+                  PopupMenuItem(
+                    value: keyvalue.key,
+                    child: Text(keyvalue.value),
+                  ),
+              ];
+            },
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                // Using less vertical padding as the text is also longer
+                // horizontally, so it feels like it would need more spacing
+                // horizontally (matching the aspect ratio of the video).
+                vertical: 12,
+                horizontal: 16,
+              ),
+              child: Text(_mediaFormats[controller.value.mediaFormat]!),
+            ),
+          ),
+        ),
       ],
     );
   }
 }
+
 
 class _PlayerVideoAndPopPage extends StatefulWidget {
   @override
@@ -224,7 +285,9 @@ class _PlayerVideoAndPopPageState extends State<_PlayerVideoAndPopPage> {
     _videoPlayerController = VideoPlayerController.asset('assets/Butterfly-209.mp4');
     _videoPlayerController.addListener(() {
       if (startedPlaying && !_videoPlayerController.value.isPlaying) {
-        Navigator.pop(context);
+        if(Navigator.canPop(context)) {
+          Navigator.pop(context);
+        }
       }
     });
   }

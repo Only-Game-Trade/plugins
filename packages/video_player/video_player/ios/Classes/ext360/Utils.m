@@ -2,7 +2,7 @@
 //  Utils.m
 //  video_player
 //
-//  Created by Eittipat Kraichingrith on 20/1/2565 BE.
+//  Created by Eittipat K on 20/1/2565 BE.
 //
 
 #import "Utils.h"
@@ -58,7 +58,7 @@
 }
 
 +(GLuint)compileShader:(GLenum)type :(NSString*)code {
-    NSLog(@"%@",code);
+    // NSLog(@"%@",code);
     GLint status = 0;
     GLuint shader = glCreateShader(type);
     const char* source = [code UTF8String];

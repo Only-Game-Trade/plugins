@@ -1,3 +1,19 @@
+/*
+ * Copyright 2017 Google Inc. All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package io.flutter.plugins.videoplayer.ext360;
 
 import static io.flutter.plugins.videoplayer.ext360.Utils.checkGlError;
@@ -27,25 +43,6 @@ public class Video360Renderer implements GLSurfaceView.Renderer {
     private SurfaceTexture displayTexture;
     private int displayTexId;
     private final AtomicBoolean frameAvailable = new AtomicBoolean();
-    private OnFrameAvailableListener externalFrameListener;
-
-    /**
-     * A spherical mesh for video should be large enough that there are no stereo artifacts.
-     */
-    public static int SPHERE_RADIUS_METERS = 50;
-
-    /**
-     * These should be configured based on the video type. But this sample assumes 360 video.
-     */
-    public static int DEFAULT_SPHERE_VERTICAL_DEGREES = 180;
-    public static int DEFAULT_SPHERE_HORIZONTAL_DEGREES = 360;
-
-    /**
-     * The 360 x 180 sphere has 15 degree quads. Increase these if lines in your video look wavy.
-     */
-    public static int DEFAULT_SPHERE_ROWS = 50;
-    public static int DEFAULT_SPHERE_COLUMNS = 50;
-
 
     // Arbitrary vertical field of view. Adjust as desired.
     private static final int FIELD_OF_VIEW_DEGREES = 90;
@@ -79,15 +76,17 @@ public class Video360Renderer implements GLSurfaceView.Renderer {
         Matrix.setIdentityM(touchYawMatrix, 0);
     }
 
+    @AnyThread
+    public synchronized Surface createSurface() {
+        return new Surface(displayTexture);
+    }
 
     @AnyThread
-    public synchronized Surface createDisplay(Mesh mesh) {
+    public synchronized void configureSurface(Mesh mesh) {
         if (displayTexture == null) {
             Log.e(TAG, ".createDisplay called before GL Initialization completed.");
-            return null;
         }
         requestedDisplayMesh = mesh;
-        return new Surface(displayTexture);
     }
 
     /**
@@ -127,25 +126,11 @@ public class Video360Renderer implements GLSurfaceView.Renderer {
     @Override
     public void onSurfaceCreated(GL10 gl10, EGLConfig eglConfig) {
         checkGlError();
-        // Matrix.setIdentityM(controllerOrientationMatrix, 0);
         GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         checkGlError();
 
-//        // Create the texture used to render each frame of video.
-//        displayTexId = Utils.glCreateExternalTexture();
-//        displayTexture = new SurfaceTexture(displayTexId);
-//        checkGlError();
-
         // When the video decodes a new frame, tell the GL thread to update the image.
-        displayTexture.setOnFrameAvailableListener(
-                surfaceTexture -> {
-                    frameAvailable.set(true);
-                    synchronized (Video360Renderer.this) {
-                        if (externalFrameListener != null) {
-                            externalFrameListener.onFrameAvailable(surfaceTexture);
-                        }
-                    }
-                });
+        displayTexture.setOnFrameAvailableListener(surfaceTexture -> frameAvailable.set(true));
     }
 
     @Override
@@ -186,7 +171,7 @@ public class Video360Renderer implements GLSurfaceView.Renderer {
             checkGlError();
         }
 
-        displayMesh.glDraw(viewProjectionMatrix, 0);
+        displayMesh.glDraw(viewProjectionMatrix);
     }
 
     public void glShutdown() {
@@ -245,13 +230,5 @@ public class Video360Renderer implements GLSurfaceView.Renderer {
         Matrix.setRotateM(touchYawMatrix, 0, -yawDegrees, 0, 1, 0);
     }
 
-    /**
-     * Binds a listener used by external clients that need to know when a new video frame is ready.
-     * This is used by MonoscopicView to update the video position slider each frame.
-     */
-    @AnyThread
-    public synchronized void setVideoFrameListener(OnFrameAvailableListener videoFrameListener) {
-        externalFrameListener = videoFrameListener;
-    }
 }
 

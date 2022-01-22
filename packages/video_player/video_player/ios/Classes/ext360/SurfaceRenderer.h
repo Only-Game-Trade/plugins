@@ -1,21 +1,17 @@
 //
-//  OpenGLRender.h
-//  opengl_texture
+//  SurfaceRenderer.h
+//  video_player
 //
-//  Created by German Saprykin on 22/4/18.
+//  Created by Eittipat K on 20/1/2565 BE.
 //
-#import <Flutter/Flutter.h>
-#import <GLKit/GLKit.h>
-#import <AVFoundation/AVFoundation.h>
+#import "OpenGLRenderer.h"
 
 @import OpenGLES;
 
-@interface SurfaceRenderer : NSObject
-@property (nonatomic, readonly) bool disposed;
+@interface SurfaceRenderer : OpenGLRenderer
 - (instancetype)initWithVideoOutput:(AVPlayerItemVideoOutput *)videoOutput;
-- (void)start;
-- (CVPixelBufferRef)copyPixelBuffer;
-- (void)dispose;
+- (void)setResolution:(int)width :(int)height;
 - (void)setMediaFormat:(int)mediaFormat;
 - (void)setCameraRotationWithRoll:(float)roll pitch:(float)pitch yaw:(float)yaw;
+- (void)dispose;
 @end

@@ -72,6 +72,10 @@ class FakeController extends ValueNotifier<VideoPlayerValue>
 
   @override
   Future<void> setCameraRotation(double? roll, double? pitch, double? yaw) async {}
+
+  @override
+  Future<void> setMediaFormat(int format) async {}
+
 }
 
 Future<ClosedCaptionFile> _loadClosedCaption() async =>

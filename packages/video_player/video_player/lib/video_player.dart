@@ -12,7 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:video_player_platform_interface/video_player_platform_interface.dart';
 
-export 'package:video_player_platform_interface/video_player_platform_interface.dart' show DurationRange, DataSourceType, VideoFormat, VideoPlayerOptions;
+export 'package:video_player_platform_interface/video_player_platform_interface.dart' show DurationRange, DataSourceType, VideoFormat, VideoPlayerOptions, MediaFormat;
 
 import 'src/closed_caption_file.dart';
 export 'src/closed_caption_file.dart';
@@ -48,6 +48,7 @@ class VideoPlayerValue {
     this.volume = 1.0,
     this.playbackSpeed = 1.0,
     this.errorDescription,
+    this.mediaFormat = MediaFormat.STANDARD,
   });
 
   /// Returns an instance for a video that hasn't been loaded.
@@ -93,6 +94,9 @@ class VideoPlayerValue {
   /// If [hasError] is false this is `null`.
   final String? errorDescription;
 
+  /// The current media format of the playback
+  final int mediaFormat;
+
   /// The [size] of the currently loaded video.
   final Size size;
 
@@ -135,6 +139,7 @@ class VideoPlayerValue {
     double? volume,
     double? playbackSpeed,
     String? errorDescription,
+    int? mediaFormat,
   }) {
     return VideoPlayerValue(
       duration: duration ?? this.duration,
@@ -149,6 +154,7 @@ class VideoPlayerValue {
       volume: volume ?? this.volume,
       playbackSpeed: playbackSpeed ?? this.playbackSpeed,
       errorDescription: errorDescription ?? this.errorDescription,
+      mediaFormat: mediaFormat ?? this.mediaFormat,
     );
   }
 
@@ -166,7 +172,8 @@ class VideoPlayerValue {
         'isBuffering: $isBuffering, '
         'volume: $volume, '
         'playbackSpeed: $playbackSpeed, '
-        'errorDescription: $errorDescription)';
+        'errorDescription: $errorDescription,'
+        'mediaFormat: $mediaFormat)';
   }
 }
 
@@ -324,11 +331,13 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
       await _videoPlayerPlatform.setMixWithOthers(videoPlayerOptions!.mixWithOthers);
     }
 
+    _textureId = (await _videoPlayerPlatform.create(dataSourceDescription)) ?? kUninitializedTextureId;
+
     if (videoPlayerOptions?.mediaFormat != null) {
-      await _videoPlayerPlatform.setMediaFormat(videoPlayerOptions!.mediaFormat);
+      value = value.copyWith(mediaFormat: videoPlayerOptions!.mediaFormat);
+      await _videoPlayerPlatform.setMediaFormat(textureId, videoPlayerOptions!.mediaFormat);
     }
 
-    _textureId = (await _videoPlayerPlatform.create(dataSourceDescription)) ?? kUninitializedTextureId;
     _creatingCompleter!.complete(null);
     final Completer<void> initializingCompleter = Completer<void>();
 
@@ -497,12 +506,20 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
     );
   }
 
-  Future<void> setCameraRotation(double? roll, double? pitch, double? yaw) async {
+  Future<void> setCameraRotation(double roll, double pitch, double yaw) async {
     if (_isDisposedOrNotInitialized) {
       return;
     }
 
     await _videoPlayerPlatform.setCameraRotation(_textureId, roll, pitch, yaw);
+  }
+
+  Future<void> setMediaFormat(int format) async {
+    if (_isDisposedOrNotInitialized) {
+      return;
+    }
+    value = value.copyWith(mediaFormat: format);
+    await _videoPlayerPlatform.setMediaFormat(_textureId, format);
   }
 
   /// The position in the current video.
@@ -1004,12 +1021,3 @@ class ClosedCaption extends StatelessWidget {
 // TODO(ianh): Remove this once we roll stable in late 2021.
 T? _ambiguate<T>(T? value) => value;
 
-class MediaFormat {
-  static const int STANDARD = 0; // 0000
-  static const int VR2D180 = 8; // 1000
-  static const int VR2D360 = 10; // 1010
-  static const int VR3D180_SBS = 12; // 1100
-  static const int VR3D180_OU = 13; // 1101
-  static const int VR3D360_SBS = 14; // 1110
-  static const int VR3D360_OU = 15; // 1111
-}

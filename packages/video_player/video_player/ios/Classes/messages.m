@@ -218,6 +218,10 @@ static NSDictionary<NSString*, id>* wrapResult(NSDictionary *result, FlutterErro
 @implementation FLTMediaFormatMessage
 +(FLTMediaFormatMessage*)fromMap:(NSDictionary*)dict {
   FLTMediaFormatMessage* result = [[FLTMediaFormatMessage alloc] init];
+  result.textureId = dict[@"textureId"];
+  if ((NSNull *)result.textureId == [NSNull null]) {
+    result.textureId = nil;
+  }
   result.mediaFormat = dict[@"mediaFormat"];
   if ((NSNull *)result.mediaFormat == [NSNull null]) {
     result.mediaFormat = nil;
@@ -225,7 +229,7 @@ static NSDictionary<NSString*, id>* wrapResult(NSDictionary *result, FlutterErro
   return result;
 }
 -(NSDictionary*)toMap {
-  return [NSDictionary dictionaryWithObjectsAndKeys:(self.mediaFormat ? self.mediaFormat : [NSNull null]), @"mediaFormat", nil];
+  return [NSDictionary dictionaryWithObjectsAndKeys:(self.textureId ? self.textureId : [NSNull null]), @"textureId", (self.mediaFormat ? self.mediaFormat : [NSNull null]), @"mediaFormat", nil];
 }
 @end
 

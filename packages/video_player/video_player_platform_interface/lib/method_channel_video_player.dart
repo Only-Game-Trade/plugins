@@ -142,7 +142,7 @@ class MethodChannelVideoPlayer extends VideoPlayerPlatform {
   }
 
   @override
-  Future<void> setCameraRotation(int textureId, double? roll, double? pitch, double? yaw) {
+  Future<void> setCameraRotation(int textureId, double roll, double pitch, double yaw) {
     return _api.setCameraRotation(
       CameraRotationMessage()
         ..textureId = textureId
@@ -153,9 +153,11 @@ class MethodChannelVideoPlayer extends VideoPlayerPlatform {
   }
 
   @override
-  Future<void> setMediaFormat(int mediaFormat) {
+  Future<void> setMediaFormat(int textureId, int mediaFormat) {
     return _api.setMediaFormat(
-      MediaFormatMessage()..mediaFormat = mediaFormat,
+      MediaFormatMessage()
+        ..textureId = textureId
+        ..mediaFormat = mediaFormat,
     );
   }
 

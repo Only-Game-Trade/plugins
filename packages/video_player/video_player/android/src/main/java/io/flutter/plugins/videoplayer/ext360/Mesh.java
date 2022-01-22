@@ -28,8 +28,61 @@ import java.nio.FloatBuffer;
  * methods to construct the Mesh's data. Then call the Mesh constructor on the GL thread when ready.
  * Use glDraw method to render it.
  */
-public final class Mesh {
-    /** Standard media where a single camera frame takes up the entire media frame. */
+public abstract class Mesh {
+
+    // Vertices for the mesh with 3D position + left 2D texture UV + right 2D texture UV.
+    public final float[] vertices;
+    protected final FloatBuffer vertexBuffer;
+
+    // Program related GL items. These are only valid if program != 0.
+    protected int program;
+    protected int mvpMatrixHandle;
+    protected int positionHandle;
+    protected int texCoordsHandle;
+    protected int textureHandle;
+    protected int textureId;
+
+
+    /**
+     * Used by static constructors.
+     */
+    protected Mesh(float[] vertexData) {
+        vertices = vertexData;
+        vertexBuffer = Utils.createBuffer(vertices);
+    }
+
+    /**
+     * Finishes initialization of the GL components.
+     *
+     * @param textureId GL_TEXTURE_EXTERNAL_OES used for this mesh.
+     */
+    public abstract void glInit(int textureId);
+
+    /**
+     * Renders the mesh. This must be called on the GL thread.
+     *
+     * @param mvpMatrix The Model View Projection matrix.
+     */
+    public abstract void glDraw(float[] mvpMatrix);
+
+    /**
+     * Cleans up the GL resources.
+     */
+    public void glShutdown() {
+        if (program != 0) {
+            GLES20.glDeleteProgram(program);
+            GLES20.glDeleteTextures(1, new int[]{textureId}, 0);
+        }
+    }
+
+}
+
+
+class Sphere extends Mesh {
+
+    /**
+     * Standard media where a single camera frame takes up the entire media frame.
+     */
     public static final int MEDIA_MONOSCOPIC = 0;
     /**
      * Stereo media where the left & right halves of the frame are rendered for the left & right eyes,
@@ -77,23 +130,13 @@ public final class Mesh {
     // scene, only the left eye's UV coordinates are used.
     // For mono media, the UV coordinates are duplicated in each. For stereo media, the UV coords
     // point to the appropriate part of the source media.
-    private static final int TEXTURE_COORDS_PER_VERTEX = 2 * 2;
+    private static final int TEXTURE_COORDS_PER_VERTEX = 2 + 2;
     // COORDS_PER_VERTEX
     private static final int CPV = POSITION_COORDS_PER_VERTEX + TEXTURE_COORDS_PER_VERTEX;
     // Data is tightly packed. Each vertex is [x, y, z, u_left, v_left, u_right, v_right].
     private static final int VERTEX_STRIDE_BYTES = CPV * Utils.BYTES_PER_FLOAT;
 
-    // Vertices for the mesh with 3D position + left 2D texture UV + right 2D texture UV.
-    public final float[] vertices;
-    private final FloatBuffer vertexBuffer;
 
-    // Program related GL items. These are only valid if program != 0.
-    private int program;
-    private int mvpMatrixHandle;
-    private int positionHandle;
-    private int texCoordsHandle;
-    private int textureHandle;
-    private int textureId;
 
     /**
      * Generates a 3D UV sphere for rendering monoscopic or stereoscopic video.
@@ -110,7 +153,7 @@ public final class Mesh {
      *                             in (0, 360].
      * @return Unintialized Mesh.
      */
-    public static Mesh createUvSphere(
+    public static Sphere createUvSphere(
             float radius,
             int latitudes,
             int longitudes,
@@ -193,23 +236,19 @@ public final class Mesh {
             // Move on to the next triangle strip.
         }
 
-        return new Mesh(vertexData);
+        return new Sphere(vertexData);
     }
 
     /**
      * Used by static constructors.
      */
-    private Mesh(float[] vertexData) {
-        vertices = vertexData;
-        vertexBuffer = Utils.createBuffer(vertices);
+    private Sphere(float[] vertexData) {
+        super(vertexData);
     }
 
-    /**
-     * Finishes initialization of the GL components.
-     *
-     * @param textureId GL_TEXTURE_EXTERNAL_OES used for this mesh.
-     */
-    void glInit(int textureId) {
+
+    @Override
+    public void glInit(int textureId) {
         this.textureId = textureId;
 
         program = Utils.compileProgram(VERTEX_SHADER_CODE, FRAGMENT_SHADER_CODE);
@@ -219,13 +258,9 @@ public final class Mesh {
         textureHandle = GLES20.glGetUniformLocation(program, "uTexture");
     }
 
-    /**
-     * Renders the mesh. This must be called on the GL thread.
-     *
-     * @param mvpMatrix The Model View Projection matrix.
-     * @param eyeType   int value.
-     */
-    void glDraw(float[] mvpMatrix, int eyeType) {
+
+    @Override
+    public void glDraw(float[] mvpMatrix) {
         // Configure shader.
         GLES20.glUseProgram(program);
         checkGlError();
@@ -252,7 +287,7 @@ public final class Mesh {
         checkGlError();
 
         // Load texture data. Eye.Type.RIGHT uses the left eye's data.
-        int textureOffset = (eyeType == 0) ? POSITION_COORDS_PER_VERTEX + 2 : POSITION_COORDS_PER_VERTEX;
+        int textureOffset = POSITION_COORDS_PER_VERTEX;
         vertexBuffer.position(textureOffset);
         GLES20.glVertexAttribPointer(
                 texCoordsHandle,
@@ -271,13 +306,116 @@ public final class Mesh {
         GLES20.glDisableVertexAttribArray(texCoordsHandle);
     }
 
+
+}
+
+class CanvasQuad extends Mesh {
+
+    private static final String[] VERTEX_SHADER_CODE =
+            new String[]{
+                    "attribute vec4 aPosition;",
+                    "attribute vec2 aTexCoords;",
+                    "varying vec2 vTexCoords;",
+
+                    // Standard transformation.
+                    "void main() {",
+                    "  gl_Position = aPosition;",
+                    "  vTexCoords = aTexCoords;",
+                    "}"
+            };
+    private static final String[] FRAGMENT_SHADER_CODE =
+            new String[]{
+                    // This is required since the texture data is GL_TEXTURE_EXTERNAL_OES.
+                    "#extension GL_OES_EGL_image_external : require",
+                    "precision mediump float;",
+
+                    // Standard texture rendering shader.
+                    "uniform samplerExternalOES uTexture;",
+                    "varying vec2 vTexCoords;",
+                    "void main() {",
+                    "  gl_FragColor = texture2D(uTexture, vTexCoords);",
+                    "}"
+            };
+
+
+    private static final int POSITION_COORDS_PER_VERTEX = 2;
+    private static final int TEXTURE_COORDS_PER_VERTEX = 2;
+    private static final int CPV = POSITION_COORDS_PER_VERTEX + TEXTURE_COORDS_PER_VERTEX;
+    private static final int VERTEX_STRIDE_BYTES = CPV * Utils.BYTES_PER_FLOAT;
+
+    public static Mesh createCanvasQuad() {
+        float width = 1.0f;
+        float height = 1.0f;
+        float[] vertexData = {
+                -width, -height,  0, 1,
+                width, -height, 1, 1,
+                -width, height, 0, 0,
+                width, height, 1, 0,
+        };
+        return new CanvasQuad(vertexData);
+    }
+
     /**
-     * Cleans up the GL resources.
+     * Used by static constructors.
      */
-    void glShutdown() {
-        if (program != 0) {
-            GLES20.glDeleteProgram(program);
-            GLES20.glDeleteTextures(1, new int[]{textureId}, 0);
-        }
+    private CanvasQuad(float[] vertexData) {
+        super(vertexData);
+    }
+
+
+    @Override
+    public void glInit(int textureId) {
+        this.textureId = textureId;
+
+        program = Utils.compileProgram(VERTEX_SHADER_CODE, FRAGMENT_SHADER_CODE);
+        positionHandle = GLES20.glGetAttribLocation(program, "aPosition");
+        texCoordsHandle = GLES20.glGetAttribLocation(program, "aTexCoords");
+        textureHandle = GLES20.glGetUniformLocation(program, "uTexture");
+    }
+
+    @Override
+    public void glDraw(float[] mvpMatrix) {
+// Configure shader.
+        GLES20.glUseProgram(program);
+        checkGlError();
+
+        GLES20.glEnableVertexAttribArray(positionHandle);
+        GLES20.glEnableVertexAttribArray(texCoordsHandle);
+        checkGlError();
+
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+        GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, textureId);
+        GLES20.glUniform1i(textureHandle, 0);
+        checkGlError();
+
+        // Load position data.
+        vertexBuffer.position(0);
+        GLES20.glVertexAttribPointer(
+                positionHandle,
+                POSITION_COORDS_PER_VERTEX,
+                GLES20.GL_FLOAT,
+                false,
+                VERTEX_STRIDE_BYTES,
+                vertexBuffer);
+        checkGlError();
+
+        // Load texture data. Eye.Type.RIGHT uses the left eye's data.
+        int textureOffset = POSITION_COORDS_PER_VERTEX;
+        vertexBuffer.position(textureOffset);
+        GLES20.glVertexAttribPointer(
+                texCoordsHandle,
+                TEXTURE_COORDS_PER_VERTEX,
+                GLES20.GL_FLOAT,
+                false,
+                VERTEX_STRIDE_BYTES,
+                vertexBuffer);
+        checkGlError();
+
+        // Render.
+        GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, vertices.length / CPV);
+        checkGlError();
+
+        GLES20.glDisableVertexAttribArray(positionHandle);
+        GLES20.glDisableVertexAttribArray(texCoordsHandle);
     }
 }

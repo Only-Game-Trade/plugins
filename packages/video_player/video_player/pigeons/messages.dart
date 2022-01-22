@@ -50,6 +50,7 @@ class CameraRotationMessage {
 }
 
 class MediaFormatMessage {
+  int textureId;
   int mediaFormat;
 }
 

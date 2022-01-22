@@ -244,17 +244,24 @@ public class Messages {
 
   /** Generated class from Pigeon that represents data sent in messages. */
   public static class MediaFormatMessage {
+    private Long textureId;
+    public Long getTextureId() { return textureId; }
+    public void setTextureId(Long setterArg) { this.textureId = setterArg; }
+
     private Long mediaFormat;
     public Long getMediaFormat() { return mediaFormat; }
     public void setMediaFormat(Long setterArg) { this.mediaFormat = setterArg; }
 
     HashMap toMap() {
       HashMap<String, Object> toMapResult = new HashMap<>();
+      toMapResult.put("textureId", textureId);
       toMapResult.put("mediaFormat", mediaFormat);
       return toMapResult;
     }
     static MediaFormatMessage fromMap(HashMap map) {
       MediaFormatMessage fromMapResult = new MediaFormatMessage();
+      Object textureId = map.get("textureId");
+      fromMapResult.textureId = (textureId == null) ? null : ((textureId instanceof Integer) ? (Integer)textureId : (Long)textureId);
       Object mediaFormat = map.get("mediaFormat");
       fromMapResult.mediaFormat = (mediaFormat == null) ? null : ((mediaFormat instanceof Integer) ? (Integer)mediaFormat : (Long)mediaFormat);
       return fromMapResult;
