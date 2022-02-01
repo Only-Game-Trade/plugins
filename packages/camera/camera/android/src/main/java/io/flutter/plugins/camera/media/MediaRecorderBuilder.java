@@ -8,6 +8,7 @@ import android.media.CamcorderProfile;
 import android.media.EncoderProfiles;
 import android.media.MediaRecorder;
 import android.os.Build;
+
 import androidx.annotation.NonNull;
 import java.io.IOException;
 
@@ -15,7 +16,7 @@ public class MediaRecorderBuilder {
   @SuppressWarnings("deprecation")
   static class MediaRecorderFactory {
     MediaRecorder makeMediaRecorder() {
-      return new MediaRecorder();
+      return new JMediaRecoder();
     }
   }
 
@@ -23,24 +24,23 @@ public class MediaRecorderBuilder {
   private final CamcorderProfile camcorderProfile;
   private final EncoderProfiles encoderProfiles;
   private final MediaRecorderFactory recorderFactory;
-
   private boolean enableAudio;
   private int mediaOrientation;
 
   public MediaRecorderBuilder(
-      @NonNull CamcorderProfile camcorderProfile, @NonNull String outputFilePath) {
+          @NonNull CamcorderProfile camcorderProfile, @NonNull String outputFilePath){
     this(camcorderProfile, outputFilePath, new MediaRecorderFactory());
   }
 
   public MediaRecorderBuilder(
-      @NonNull EncoderProfiles encoderProfiles, @NonNull String outputFilePath) {
+          @NonNull EncoderProfiles encoderProfiles, @NonNull String outputFilePath) {
     this(encoderProfiles, outputFilePath, new MediaRecorderFactory());
   }
 
   MediaRecorderBuilder(
-      @NonNull CamcorderProfile camcorderProfile,
-      @NonNull String outputFilePath,
-      MediaRecorderFactory helper) {
+          @NonNull CamcorderProfile camcorderProfile,
+          @NonNull String outputFilePath,
+          MediaRecorderFactory helper) {
     this.outputFilePath = outputFilePath;
     this.camcorderProfile = camcorderProfile;
     this.encoderProfiles = null;
@@ -48,9 +48,9 @@ public class MediaRecorderBuilder {
   }
 
   MediaRecorderBuilder(
-      @NonNull EncoderProfiles encoderProfiles,
-      @NonNull String outputFilePath,
-      MediaRecorderFactory helper) {
+          @NonNull EncoderProfiles encoderProfiles,
+          @NonNull String outputFilePath,
+          MediaRecorderFactory helper) {
     this.outputFilePath = outputFilePath;
     this.encoderProfiles = encoderProfiles;
     this.camcorderProfile = null;
@@ -68,6 +68,7 @@ public class MediaRecorderBuilder {
   }
 
   public MediaRecorder build() throws IOException, NullPointerException, IndexOutOfBoundsException {
+
     MediaRecorder mediaRecorder = recorderFactory.makeMediaRecorder();
 
     // There's a fixed order that mediaRecorder expects. Only change these functions accordingly.
@@ -103,12 +104,9 @@ public class MediaRecorderBuilder {
       mediaRecorder.setVideoSize(
           camcorderProfile.videoFrameWidth, camcorderProfile.videoFrameHeight);
     }
-
     mediaRecorder.setOutputFile(outputFilePath);
     mediaRecorder.setOrientationHint(this.mediaOrientation);
-
     mediaRecorder.prepare();
-
     return mediaRecorder;
   }
 }
