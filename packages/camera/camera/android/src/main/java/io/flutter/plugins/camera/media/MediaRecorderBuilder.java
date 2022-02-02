@@ -16,7 +16,7 @@ public class MediaRecorderBuilder {
   @SuppressWarnings("deprecation")
   static class MediaRecorderFactory {
     MediaRecorder makeMediaRecorder() {
-      return new JMediaRecoder();
+      return new MediaRecorder();
     }
   }
 
