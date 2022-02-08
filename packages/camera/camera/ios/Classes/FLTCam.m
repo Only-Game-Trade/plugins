@@ -590,6 +590,46 @@ NSString *const errorMethod = @"error";
   }
 }
 
+-(void)extractM4AWithSrc:(NSString*)srcPath withDst:(NSString*)dstPath withOnDone:(void (^)(bool))onDone {
+  NSURL *srcURL = [NSURL fileURLWithPath:srcPath];
+  NSURL *dstURL = [NSURL fileURLWithPath:dstPath];
+
+  AVMutableComposition* newAudioAsset = [AVMutableComposition composition];
+  AVMutableCompositionTrack*  dstCompositionTrack = [newAudioAsset
+                                                      addMutableTrackWithMediaType:AVMediaTypeAudio
+                                                      preferredTrackID:kCMPersistentTrackID_Invalid];
+  AVAsset* srcAsset = [AVURLAsset URLAssetWithURL:srcURL options:nil];
+  AVAssetTrack* srcTrack = [[srcAsset tracksWithMediaType:AVMediaTypeAudio] objectAtIndex:0];
+
+  NSError* error;
+  if(NO == [dstCompositionTrack insertTimeRange:srcTrack.timeRange ofTrack:srcTrack atTime:kCMTimeZero error:&error]) {
+    NSLog(@"track insert failed: %@\n", error);
+    onDone(NO);
+    return;
+  }
+
+  AVAssetExportSession* exporter = [[AVAssetExportSession alloc] initWithAsset:newAudioAsset presetName:AVAssetExportPresetPassthrough];
+  exporter.outputFileType = AVFileTypeAppleM4A;
+  exporter.outputURL = dstURL;
+  [exporter exportAsynchronouslyWithCompletionHandler:^{
+    AVAssetExportSessionStatus status = exporter.status;
+    switch(status) {
+      case AVAssetExportSessionStatusCompleted:
+        NSLog(@"SUCCESS!\n");
+        onDone(YES);
+        break;
+      case AVAssetExportSessionStatusFailed:
+        NSLog(@"FAILURE: %@\n", exporter.error);
+        onDone(NO);
+        break;
+      default:
+        NSLog(@"UNKNOWN: %ld\n", (long)status);
+        onDone(NO);
+        break;
+    }
+  }];
+}
+
 - (void)stopVideoRecordingWithResult:(FLTThreadSafeFlutterResult *)result {
   if (_isRecording) {
     _isRecording = NO;
@@ -598,8 +638,20 @@ NSString *const errorMethod = @"error";
       [_videoWriter finishWritingWithCompletionHandler:^{
         if (self->_videoWriter.status == AVAssetWriterStatusCompleted) {
           [self updateOrientation];
-          [result sendSuccessWithData:self->_videoRecordingPath];
-          self->_videoRecordingPath = nil;
+          NSString *pathname =[self->_videoRecordingPath stringByDeletingLastPathComponent];
+          NSString *filename = [[self->_videoRecordingPath lastPathComponent]stringByDeletingPathExtension];
+          NSString *m4aFile = [NSString stringWithFormat:@"%@/%@.m4a",pathname,filename];
+          NSLog(@"Writing m4a file to %@\n",m4aFile);
+          [self extractM4AWithSrc:self->_videoRecordingPath withDst:m4aFile withOnDone:^(bool success){
+            if (success==YES) {
+              [result sendSuccessWithData:self->_videoRecordingPath];
+              self->_videoRecordingPath = nil;
+            } else {
+              [result sendErrorWithCode:@"IOError"
+                                message:@"AVAssetWriter could not finish writing!"
+                                details:nil];
+            }
+          }];
         } else {
           [result sendErrorWithCode:@"IOError"
                             message:@"AVAssetWriter could not finish writing!"
