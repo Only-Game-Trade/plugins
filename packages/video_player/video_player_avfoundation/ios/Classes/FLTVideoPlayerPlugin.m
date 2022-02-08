@@ -30,17 +30,12 @@
 }
 @end
 
-@interface FLTVideoPlayer : NSObject <FlutterTexture, FlutterStreamHandler>
-@property(readonly, nonatomic) AVPlayer *player;
-@property(readonly, nonatomic) AVPlayerItemVideoOutput *videoOutput;
+@interface FLTVideoPlayer ()
 @property(readonly, nonatomic) CADisplayLink *displayLink;
 @property(nonatomic) FlutterEventChannel *eventChannel;
 @property(nonatomic) FlutterEventSink eventSink;
 @property(nonatomic) CGAffineTransform preferredTransform;
-@property(nonatomic, readonly) BOOL disposed;
-@property(nonatomic, readonly) BOOL isPlaying;
 @property(nonatomic) BOOL isLooping;
-@property(nonatomic, readonly) BOOL isInitialized;
 - (instancetype)initWithURL:(NSURL *)url
                frameUpdater:(FLTFrameUpdater *)frameUpdater
                 httpHeaders:(NSDictionary<NSString *, NSString *> *)headers;
@@ -354,9 +349,13 @@ NS_INLINE CGFloat radiansToDegrees(CGFloat radians) {
     }
 
     BOOL hasVideoTracks = [asset tracksWithMediaType:AVMediaTypeVideo].count != 0;
+    BOOL hasNoTracks = asset.tracks.count == 0;
 
-    // The player has not yet initialized when it contains video tracks.
-    if (hasVideoTracks && height == CGSizeZero.height && width == CGSizeZero.width) {
+    // The player has not yet initialized when it has no size, unless it is an audio-only track.
+    // HLS m3u8 video files never load any tracks, and are also not yet initialized until they have
+    // a size.
+    if ((hasVideoTracks || hasNoTracks) && height == CGSizeZero.height &&
+        width == CGSizeZero.width) {
       return;
     }
     // The player may be initialized but still needs to determine the duration.
@@ -498,8 +497,6 @@ NS_INLINE CGFloat radiansToDegrees(CGFloat radians) {
 @interface FLTVideoPlayerPlugin () <FLTVideoPlayerApi>
 @property(readonly, weak, nonatomic) NSObject<FlutterTextureRegistry> *registry;
 @property(readonly, weak, nonatomic) NSObject<FlutterBinaryMessenger> *messenger;
-@property(readonly, strong, nonatomic)
-    NSMutableDictionary<NSNumber *, FLTVideoPlayer *> *playersByTextureId;
 @property(readonly, strong, nonatomic) NSObject<FlutterPluginRegistrar> *registrar;
 @end
 
