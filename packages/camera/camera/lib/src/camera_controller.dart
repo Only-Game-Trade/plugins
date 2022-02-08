@@ -834,4 +834,13 @@ class CameraController extends ValueNotifier<CameraValue> {
       super.removeListener(listener);
     }
   }
+
+  /// The position in the current recoding video.
+  Future<Duration?> get position async {
+    if (!value.isRecordingVideo ) {
+      return null;
+    }
+    return await CameraPlatform.instance.getPosition(_cameraId);
+  }
+
 }

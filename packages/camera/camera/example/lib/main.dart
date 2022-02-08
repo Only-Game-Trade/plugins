@@ -814,6 +814,8 @@ class _CameraExampleHomeState extends State<CameraExampleHome>
     });
   }
 
+  Timer? _timer;
+
   Future<void> startVideoRecording() async {
     final CameraController? cameraController = controller;
 
@@ -833,6 +835,13 @@ class _CameraExampleHomeState extends State<CameraExampleHome>
       _showCameraException(e);
       return;
     }
+    _timer?.cancel();
+    _timer = Timer.periodic(const Duration(milliseconds: 10), (timer) async {
+      final position = await cameraController.position;
+      if(position!=null) {
+        print(position!.inMilliseconds);
+      }
+    });
   }
 
   Future<XFile?> stopVideoRecording() async {

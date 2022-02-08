@@ -80,6 +80,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)getMinZoomLevelWithResult:(FLTThreadSafeFlutterResult *)result;
 - (void)setZoomLevel:(CGFloat)zoom Result:(FLTThreadSafeFlutterResult *)result;
 - (void)setUpCaptureSessionForAudio;
+- (void)getPositionWithResult:(FLTThreadSafeFlutterResult *)result;
 
 @end
 

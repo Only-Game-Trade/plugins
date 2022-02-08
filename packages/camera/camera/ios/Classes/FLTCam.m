@@ -68,6 +68,9 @@
 @property(assign, nonatomic) BOOL isAudioSetup;
 @property(assign, nonatomic) BOOL isStreamingImages;
 @property(assign, nonatomic) UIDeviceOrientation lockedCaptureOrientation;
+@property(assign, nonatomic) CMTime zeroSampleTime;
+@property(assign, nonatomic) CMTime firstVideoSampleTime;
+@property(assign, nonatomic) CMTime firstAudioSampleTime;
 @property(assign, nonatomic) CMTime lastVideoSampleTime;
 @property(assign, nonatomic) CMTime lastAudioSampleTime;
 @property(assign, nonatomic) CMTime videoTimeOffset;
@@ -448,7 +451,10 @@ NSString *const errorMethod = @"error";
 
         return;
       }
-
+      
+      if(CMTIME_COMPARE_INLINE(_firstVideoSampleTime,==, _zeroSampleTime)) {
+        _firstVideoSampleTime = currentSampleTime;
+      }
       _lastVideoSampleTime = currentSampleTime;
 
       CVPixelBufferRef nextBuffer = CMSampleBufferGetImageBuffer(sampleBuffer);
@@ -474,7 +480,11 @@ NSString *const errorMethod = @"error";
         return;
       }
 
+      if(CMTIME_COMPARE_INLINE(_firstAudioSampleTime,==, _zeroSampleTime)) {
+        _firstAudioSampleTime = currentSampleTime;
+      }
       _lastAudioSampleTime = currentSampleTime;
+      
 
       if (_audioTimeOffset.value != 0) {
         CFRelease(sampleBuffer);
@@ -580,6 +590,9 @@ NSString *const errorMethod = @"error";
     }
     _isRecording = YES;
     _isRecordingPaused = NO;
+    _zeroSampleTime = CMTimeMake(0, 1);
+    _firstVideoSampleTime = CMTimeMake(0, 1);
+    _firstAudioSampleTime = CMTimeMake(0, 1);
     _videoTimeOffset = CMTimeMake(0, 1);
     _audioTimeOffset = CMTimeMake(0, 1);
     _videoIsDisconnected = NO;
@@ -929,6 +942,12 @@ NSString *const errorMethod = @"error";
   } else {
     [_methodChannel invokeMethod:errorMethod arguments:@"Images from camera are not streaming!"];
   }
+}
+
+- (void)getPositionWithResult:(FLTThreadSafeFlutterResult *)result {
+  Float64 timestamp = CMTimeGetSeconds(_lastVideoSampleTime) - CMTimeGetSeconds(_firstVideoSampleTime);
+  long milliseconds = (long)(timestamp*1000.0f);
+  [result sendSuccessWithData:[NSNumber numberWithLong:milliseconds]];
 }
 
 - (void)getMaxZoomLevelWithResult:(FLTThreadSafeFlutterResult *)result {

@@ -256,4 +256,10 @@ abstract class CameraPlatform extends PlatformInterface {
   Future<void> dispose(int cameraId) {
     throw UnimplementedError('dispose() is not implemented.');
   }
+
+  /// Return a current position of recording video
+  Future<Duration?> getPosition(int cameraId) {
+    throw UnimplementedError('getPosition() is not implemented.');
+  }
+
 }

@@ -261,6 +261,8 @@
       [_camera pausePreviewWithResult:result];
     } else if ([@"resumePreview" isEqualToString:call.method]) {
       [_camera resumePreviewWithResult:result];
+    } else if ([@"getPosition" isEqualToString:call.method]) {
+      [_camera getPositionWithResult:result];
     } else {
       [result sendNotImplemented];
     }

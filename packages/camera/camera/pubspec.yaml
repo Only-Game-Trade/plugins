@@ -1,4 +1,5 @@
 name: camera
+publish_to: none
 description: A Flutter plugin for controlling the camera. Supports previewing
   the camera feed, capturing images and video, and streaming image buffers to
   Dart.
@@ -18,12 +19,16 @@ flutter:
         pluginClass: CameraPlugin
       ios:
         pluginClass: CameraPlugin
-      web:
-        default_package: camera_web
+      # web:
+      #   default_package: camera_web
 
 dependencies:
-  camera_platform_interface: ^2.1.0
-  camera_web: ^0.2.1
+  camera_platform_interface:
+    git:
+      url: https://github.com/Eittipat/plugins.git
+      path: packages/camera/camera_platform_interface
+      ref: duet_camera
+  # camera_web: ^0.2.1
   flutter:
     sdk: flutter
   pedantic: ^1.10.0
