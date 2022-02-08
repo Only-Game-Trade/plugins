@@ -608,7 +608,7 @@ NSString *const errorMethod = @"error";
     return;
   }
 
-  AVAssetExportSession* exporter = [[AVAssetExportSession alloc] initWithAsset:newAudioAsset presetName:AVAssetExportPresetPassthrough];
+  AVAssetExportSession* exporter = [[AVAssetExportSession alloc] initWithAsset:newAudioAsset presetName:AVAssetExportPresetAppleM4A];
   exporter.outputFileType = AVFileTypeAppleM4A;
   exporter.outputURL = dstURL;
   [exporter exportAsynchronouslyWithCompletionHandler:^{
