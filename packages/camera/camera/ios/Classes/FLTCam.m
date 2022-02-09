@@ -68,6 +68,7 @@
 @property(assign, nonatomic) BOOL isAudioSetup;
 @property(assign, nonatomic) BOOL isStreamingImages;
 @property(assign, nonatomic) UIDeviceOrientation lockedCaptureOrientation;
+@property(assign, nonatomic) double firstSampleTime;
 @property(assign, nonatomic) CMTime zeroSampleTime;
 @property(assign, nonatomic) CMTime firstVideoSampleTime;
 @property(assign, nonatomic) CMTime firstAudioSampleTime;
@@ -432,7 +433,7 @@ NSString *const errorMethod = @"error";
 
     CFRetain(sampleBuffer);
     CMTime currentSampleTime = CMSampleBufferGetPresentationTimeStamp(sampleBuffer);
-
+    
     if (_videoWriter.status != AVAssetWriterStatusWriting) {
       [_videoWriter startWriting];
       [_videoWriter startSessionAtSourceTime:currentSampleTime];
@@ -493,7 +494,11 @@ NSString *const errorMethod = @"error";
 
       [self newAudioSample:sampleBuffer];
     }
-
+    
+    if(_firstSampleTime==-1) {
+      _firstSampleTime = CACurrentMediaTime();
+    }
+    
     CFRelease(sampleBuffer);
   }
 }
@@ -590,6 +595,7 @@ NSString *const errorMethod = @"error";
     }
     _isRecording = YES;
     _isRecordingPaused = NO;
+    _firstSampleTime = -1;
     _zeroSampleTime = CMTimeMake(0, 1);
     _firstVideoSampleTime = CMTimeMake(0, 1);
     _firstAudioSampleTime = CMTimeMake(0, 1);
@@ -945,8 +951,10 @@ NSString *const errorMethod = @"error";
 }
 
 - (void)getPositionWithResult:(FLTThreadSafeFlutterResult *)result {
-  Float64 timestamp = CMTimeGetSeconds(_lastAudioSampleTime) - CMTimeGetSeconds(_firstAudioSampleTime);
-  long milliseconds = (long)(timestamp*1000.0f);
+  double interval = CACurrentMediaTime()-_firstSampleTime;
+  long milliseconds = (long)(interval*1000.0L);
+  //Float64 timestamp = CMTimeGetSeconds(_lastAudioSampleTime) - CMTimeGetSeconds(_firstAudioSampleTime);
+  //long milliseconds = (long)(timestamp*1000.0f);
   [result sendSuccessWithData:[NSNumber numberWithLong:milliseconds]];
 }
 
