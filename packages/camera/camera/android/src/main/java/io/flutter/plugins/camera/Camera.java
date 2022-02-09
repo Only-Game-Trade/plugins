@@ -140,8 +140,7 @@ class Camera
 
   private MethodChannel.Result flutterResult;
 
-  private SurfaceTexture surfaceReference;
-  private long firstTimestamp;
+  private Long firstTimestamp = null;
 
   public Camera(
       final Activity activity,
@@ -355,7 +354,6 @@ class Camera
         resolutionFeature.getPreviewSize().getHeight());
     Surface flutterSurface = new Surface(surfaceTexture);
     previewRequestBuilder.addTarget(flutterSurface);
-    surfaceReference = surfaceTexture;
 
     List<Surface> remainingSurfaces = Arrays.asList(surfaces);
     if (templateType != CameraDevice.TEMPLATE_PREVIEW) {
@@ -465,7 +463,7 @@ class Camera
 
       if (onSuccessCallback != null) {
         onSuccessCallback.run();
-        firstTimestamp = surfaceReference.getTimestamp();
+        firstTimestamp = System.currentTimeMillis();
       }
 
     } catch (IllegalStateException e) {
@@ -780,6 +778,7 @@ class Camera
     try {
       captureSession.abortCaptures();
       mediaRecorder.stop();
+      firstTimestamp = null;
     } catch (CameraAccessException | IllegalStateException e) {
       // Ignore exceptions and try to continue (changes are camera session already aborted capture).
     }
@@ -801,7 +800,6 @@ class Camera
     }
     result.success(captureFile.getAbsolutePath());
     captureFile = null;
-    surfaceReference = null;
   }
 
   public void pauseVideoRecording(@NonNull final Result result) {
@@ -899,8 +897,8 @@ class Camera
 
   /** Return current position of recording video. */
   public long getPosition() {
-    if(surfaceReference==null) return 0;
-    return (surfaceReference.getTimestamp() - firstTimestamp)/1_000_000L;
+    if(firstTimestamp==null) return 0;
+    return System.currentTimeMillis() - firstTimestamp;
   }
 
   /** Return the max exposure offset value supported by the camera to dart. */
@@ -1184,7 +1182,7 @@ class Camera
 
       captureSession.close();
       captureSession = null;
-      surfaceReference = null;
+      firstTimestamp = null;
     }
   }
 
