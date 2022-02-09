@@ -23,6 +23,10 @@ import android.media.CamcorderProfile;
 import android.media.EncoderProfiles;
 import android.media.Image;
 import android.media.ImageReader;
+import android.media.MediaCodec;
+import android.media.MediaExtractor;
+import android.media.MediaFormat;
+import android.media.MediaMuxer;
 import android.media.MediaRecorder;
 import android.os.Build;
 import android.os.Build.VERSION;
@@ -717,6 +721,53 @@ class Camera
     }
   }
 
+  @SuppressLint("WrongConstant")
+  public void extractM4A(@NonNull final String srcPath, @NonNull final String dstPath) throws IOException, IllegalStateException {
+    MediaExtractor extractor = new MediaExtractor();
+    extractor.setDataSource(srcPath);
+    // looking for audio track
+    int trackCount = extractor.getTrackCount();
+    int trackIndex = -1;
+    Log.d(TAG,"Total tracks: "+trackCount);
+    for(int i=0;i<trackCount;i++ ){
+      MediaFormat format = extractor.getTrackFormat(i);
+      final String mime = format.getString(MediaFormat.KEY_MIME);
+      if(mime.equals("audio/mp4a-latm")) {
+        trackIndex = i;
+        break;
+      }
+    }
+    if(trackIndex==-1) {
+      throw new IllegalStateException("Cannot find audio track!");
+    }
+
+    extractor.selectTrack(trackIndex);
+    MediaMuxer muxer = new MediaMuxer(dstPath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
+    int index = muxer.addTrack(extractor.getTrackFormat(trackIndex));
+
+    boolean eos = false;
+    int bufferSize = 1024;
+    ByteBuffer dstBuf = ByteBuffer.allocate(bufferSize);
+    MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
+    muxer.start();
+    while(!eos){
+      bufferInfo.offset = 0;
+      bufferInfo.size = extractor.readSampleData(dstBuf, 0);
+      if (bufferInfo.size < 0) {
+        eos = true;
+        bufferInfo.size = 0;
+      } else {
+        bufferInfo.presentationTimeUs = extractor.getSampleTime();
+        bufferInfo.flags = extractor.getSampleFlags();
+        muxer.writeSampleData(index, dstBuf, bufferInfo);
+        extractor.advance();
+      }
+    }
+    muxer.stop();
+    muxer.release();
+    extractor.release();
+  }
+
   public void stopVideoRecording(@NonNull final Result result) {
     if (!recordingVideo) {
       result.success(null);
@@ -739,8 +790,18 @@ class Camera
       result.error("videoRecordingFailed", e.getMessage(), null);
       return;
     }
+    try {
+      String fileName = captureFile.getName().replaceFirst("[.][^.]+$", "");
+      File m4aFile = new File(captureFile.getParentFile(),fileName+".m4a");
+      Log.d(TAG,"Writing m4a file to "+m4aFile.getAbsolutePath());
+      extractM4A(captureFile.getAbsolutePath(),m4aFile.getAbsolutePath());
+    }catch (IOException | IllegalStateException e) {
+      result.error("videoRecordingFailed", e.getMessage(), null);
+      return;
+    }
     result.success(captureFile.getAbsolutePath());
     captureFile = null;
+    surfaceReference = null;
   }
 
   public void pauseVideoRecording(@NonNull final Result result) {
@@ -760,7 +821,6 @@ class Camera
       result.error("videoRecordingFailed", e.getMessage(), null);
       return;
     }
-    surfaceReference = null;
     result.success(null);
   }
 
