@@ -945,7 +945,7 @@ NSString *const errorMethod = @"error";
 }
 
 - (void)getPositionWithResult:(FLTThreadSafeFlutterResult *)result {
-  Float64 timestamp = CMTimeGetSeconds(_lastVideoSampleTime) - CMTimeGetSeconds(_firstVideoSampleTime);
+  Float64 timestamp = CMTimeGetSeconds(_lastAudioSampleTime) - CMTimeGetSeconds(_firstAudioSampleTime);
   long milliseconds = (long)(timestamp*1000.0f);
   [result sendSuccessWithData:[NSNumber numberWithLong:milliseconds]];
 }
