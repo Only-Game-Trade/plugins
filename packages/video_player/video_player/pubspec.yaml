@@ -1,4 +1,5 @@
 name: video_player
+publish_to: none
 description: Flutter plugin for displaying inline video with other Flutter
   widgets on Android, iOS, and web.
 repository: https://github.com/flutter/plugins/tree/main/packages/video_player/video_player
