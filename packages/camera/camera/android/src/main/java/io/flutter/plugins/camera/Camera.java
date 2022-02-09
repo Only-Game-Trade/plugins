@@ -136,6 +136,9 @@ class Camera
 
   private MethodChannel.Result flutterResult;
 
+  private SurfaceTexture surfaceReference;
+  private long firstTimestamp;
+
   public Camera(
       final Activity activity,
       final SurfaceTextureEntry flutterTexture,
@@ -348,6 +351,7 @@ class Camera
         resolutionFeature.getPreviewSize().getHeight());
     Surface flutterSurface = new Surface(surfaceTexture);
     previewRequestBuilder.addTarget(flutterSurface);
+    surfaceReference = surfaceTexture;
 
     List<Surface> remainingSurfaces = Arrays.asList(surfaces);
     if (templateType != CameraDevice.TEMPLATE_PREVIEW) {
@@ -457,6 +461,7 @@ class Camera
 
       if (onSuccessCallback != null) {
         onSuccessCallback.run();
+        firstTimestamp = surfaceReference.getTimestamp();
       }
 
     } catch (IllegalStateException e) {
@@ -755,7 +760,7 @@ class Camera
       result.error("videoRecordingFailed", e.getMessage(), null);
       return;
     }
-
+    surfaceReference = null;
     result.success(null);
   }
 
@@ -830,6 +835,12 @@ class Camera
         () -> result.success(null),
         (code, message) ->
             result.error("setExposurePointFailed", "Could not set exposure point.", null));
+  }
+
+  /** Return current position of recording video. */
+  public long getPosition() {
+    if(surfaceReference==null) return 0;
+    return (surfaceReference.getTimestamp() - firstTimestamp)/1_000_000L;
   }
 
   /** Return the max exposure offset value supported by the camera to dart. */
@@ -1113,6 +1124,7 @@ class Camera
 
       captureSession.close();
       captureSession = null;
+      surfaceReference = null;
     }
   }
 

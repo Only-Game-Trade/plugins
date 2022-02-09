@@ -268,6 +268,18 @@ final class MethodCallHandlerImpl implements MethodChannel.MethodCallHandler {
           }
           break;
         }
+      case "getPosition":
+        {
+          assert camera != null;
+
+          try {
+            long position = camera.getPosition();
+            result.success(position);
+          } catch (Exception e) {
+            handleException(e, result);
+          }
+          break;
+        }
       case "getMaxZoomLevel":
         {
           assert camera != null;
