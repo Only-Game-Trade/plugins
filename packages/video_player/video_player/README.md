@@ -1,4 +1,4 @@
-# Video Player Exra plugin for Flutter
+# Video Player Extra plugin for Flutter
 
 [![pub package](https://img.shields.io/pub/v/video_player_extra.svg)](https://pub.dev/packages/video_player_extra)
 
